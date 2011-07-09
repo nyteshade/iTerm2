@@ -125,6 +125,17 @@
 #endif
 }
 
+- (void)toggleFullScreen:(id)sender
+{
+    isFullScreen_ = !isFullScreen_;
+    [super toggleFullScreen:sender];
+}
+
+- (BOOL)isFullScreen
+{
+    return isFullScreen_;
+}
+
 - (int)screenNumber
 {
     return [[[[self screen] deviceDescription] objectForKey:@"NSScreenNumber"] intValue];

@@ -71,6 +71,11 @@
 
 #define ITLocalizedString(key) NSLocalizedStringFromTableInBundle(key, @"iTerm", [NSBundle bundleForClass:[self class]], @"Context menu")
 
+#if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
+static const int NSWindowCollectionBehaviorFullScreenPrimary = 1 << 7;
+static const int NSApplicationPresentationAutoHideToolbar = (1 << 11);
+#endif
+
 // #define PSEUDOTERMINAL_VERBOSE_LOGGING
 #ifdef PSEUDOTERMINAL_VERBOSE_LOGGING
 #define PtyLog NSLog
@@ -168,7 +173,6 @@ NSString *sessionsKey = @"sessions";
 
 - (id)initWithSmartLayout:(BOOL)smartLayout windowType:(int)windowType screen:(int)screenNumber
 {
-    unsigned int styleMask;
     PTYWindow *myWindow;
 
     self = [super initWithWindowNibName:@"PseudoTerminal"];
@@ -193,12 +197,6 @@ NSString *sessionsKey = @"sessions";
     windowType_ = windowType;
     pbHistoryView = [[PasteboardHistoryView alloc] init];
     autocompleteView = [[AutocompleteView alloc] init];
-    // create the window programmatically with appropriate style mask
-    styleMask = NSTitledWindowMask |
-        NSClosableWindowMask |
-        NSMiniaturizableWindowMask |
-        NSResizableWindowMask |
-        NSTexturedBackgroundWindowMask;
 
     NSScreen* screen;
     if (screenNumber < 0 || screenNumber >= [[NSScreen screens] count])  {
@@ -261,8 +259,31 @@ NSString *sessionsKey = @"sessions";
     preferredOrigin_ = initialFrame.origin;
 
     PtyLog(@"initWithSmartLayout - initWithContentRect");
+    // create the window programmatically with appropriate style mask
+    NSUInteger styleMask = NSTitledWindowMask |
+                           NSClosableWindowMask |
+                           NSMiniaturizableWindowMask |
+                           NSResizableWindowMask |
+                           NSTexturedBackgroundWindowMask;
+    const BOOL isLionOrBetter = [[self window] respondsToSelector:@selector(toggleFullScreen:)];
+
+    switch (windowType) {
+        case WINDOW_TYPE_TOP:
+            styleMask = NSBorderlessWindowMask;
+            break;
+
+        case WINDOW_TYPE_FORCE_FULL_SCREEN:
+            if (!isLionOrBetter) {
+                styleMask = NSBorderlessWindowMask;
+            }
+            break;
+
+        default:
+            break;
+    }
+
     myWindow = [[PTYWindow alloc] initWithContentRect:initialFrame
-                                            styleMask:(windowType == WINDOW_TYPE_TOP || windowType == WINDOW_TYPE_FORCE_FULL_SCREEN) ? NSBorderlessWindowMask : styleMask
+                                            styleMask:styleMask
                                               backing:NSBackingStoreBuffered
                                                 defer:NO];
     if (windowType == WINDOW_TYPE_TOP) {
@@ -274,7 +295,7 @@ NSString *sessionsKey = @"sessions";
     [self setWindow:myWindow];
     [myWindow release];
 
-    _fullScreen = (windowType == WINDOW_TYPE_FORCE_FULL_SCREEN);
+    _fullScreen = !isLionOrBetter && (windowType == WINDOW_TYPE_FORCE_FULL_SCREEN);
     if (_fullScreen) {
         background_ = [[SolidColorView alloc] initWithFrame:[[[self window] contentView] frame] color:[NSColor blackColor]];
     } else {
@@ -308,6 +329,7 @@ NSString *sessionsKey = @"sessions";
     NSRect aRect = [[[self window] contentView] bounds];
     aRect.size.height = 22;
     tabBarControl = [[PSMTabBarControl alloc] initWithFrame:aRect];
+    [tabBarControl retain];
     PreferencePanel* pp = [PreferencePanel sharedInstance];
     [tabBarControl setModifier:[pp modifierTagToMask:[pp switchTabModifier]]];
     [tabBarControl setAutoresizingMask:(NSViewWidthSizable | NSViewMinYMargin)];
@@ -384,6 +406,9 @@ NSString *sessionsKey = @"sessions";
     if (windowType == WINDOW_TYPE_FORCE_FULL_SCREEN) {
         windowType_ = WINDOW_TYPE_FULL_SCREEN;
     }
+
+    [[self window] setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
+
     return self;
 }
 
@@ -708,6 +733,7 @@ NSString *sessionsKey = @"sessions";
     [pbHistoryView shutdown];
     [pbHistoryView release];
     [autocompleteView release];
+    [tabBarControl release];
 
     if (fullScreenTabviewTimer_) {
         [fullScreenTabviewTimer_ invalidate];
@@ -797,7 +823,7 @@ NSString *sessionsKey = @"sessions";
 
     if (windowType == WINDOW_TYPE_FULL_SCREEN) {
         term = [[[PseudoTerminal alloc] initWithSmartLayout:NO
-                                                 windowType:WINDOW_TYPE_FORCE_FULL_SCREEN
+                                                 windowType:WINDOW_TYPE_NORMAL //WINDOW_TYPE_FORCE_FULL_SCREEN
                                                      screen:screenIndex] autorelease];
 
         NSRect rect;
@@ -806,6 +832,11 @@ NSString *sessionsKey = @"sessions";
         rect.size.width = [[arrangement objectForKey:TERMINAL_ARRANGEMENT_OLD_WIDTH] doubleValue];
         rect.size.height = [[arrangement objectForKey:TERMINAL_ARRANGEMENT_OLD_HEIGHT] doubleValue];
         term->oldFrame_ = rect;
+        if ([[term window] respondsToSelector:@selector(toggleFullScreen:)]) {
+            [term performSelector:@selector(toggleFullScreenMode:)
+                       withObject:nil
+                       afterDelay:0];
+        }
     } else {
         if (windowType == WINDOW_TYPE_NORMAL) {
             screenIndex = -1;
@@ -850,7 +881,7 @@ NSString *sessionsKey = @"sessions";
     [result setObject:[NSNumber numberWithDouble:rect.size.height]
                forKey:TERMINAL_ARRANGEMENT_HEIGHT];
 
-    if (_fullScreen) {
+    if ([self anyFullScreen]) {
         // Save old window frame
         [result setObject:[NSNumber numberWithDouble:oldFrame_.origin.x]
                    forKey:TERMINAL_ARRANGEMENT_OLD_X_ORIGIN];
@@ -1141,6 +1172,11 @@ NSString *sessionsKey = @"sessions";
     [[[self currentSession] TEXTVIEW] setNeedsDisplay:YES];
 }
 
+- (BOOL)anyFullScreen
+{
+    return _fullScreen || [[self window] isFullScreen];
+}
+
 - (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)proposedFrameSize
 {
     PtyLog(@"%s(%d):-[PseudoTerminal windowWillResize: obj=%d, proposedFrameSize width = %f; height = %f]",
@@ -1170,7 +1206,7 @@ NSString *sessionsKey = @"sessions";
     // Snap proposed tab size to grid.  The snapping uses a grid spaced to
     // match the current pane's character size and aligned so margins are
     // correct if all we have is a single pane.
-    BOOL hasScrollbar = !_fullScreen && ![[PreferencePanel sharedInstance] hideScrollbar];
+    BOOL hasScrollbar = ![self anyFullScreen] && ![[PreferencePanel sharedInstance] hideScrollbar];
     NSSize contentSize = [PTYScrollView contentSizeForFrameSize:tabSize
                                         hasHorizontalScroller:NO
                                         hasVerticalScroller:hasScrollbar
@@ -1286,6 +1322,16 @@ NSString *sessionsKey = @"sessions";
 
 - (IBAction)toggleFullScreenMode:(id)sender
 {
+    if ([[self window] respondsToSelector:@selector(toggleFullScreen:)]) {
+        [[self window] toggleFullScreen:self];
+        if ([[self window] isFullScreen]) {
+            windowType_ = WINDOW_TYPE_FULL_SCREEN;
+        } else {
+            windowType_ = WINDOW_TYPE_NORMAL;
+        }
+        return;
+    }
+
     [SessionView windowDidResize];
     if (windowType_ == WINDOW_TYPE_TOP) {
         // TODO: would be nice if you could toggle top windows to fullscreen
@@ -1497,7 +1543,7 @@ NSString *sessionsKey = @"sessions";
 {
     PtyLog(@"sessionInitiatedResize");
     // ignore resize request when we are in full screen mode.
-    if (_fullScreen) {
+    if ([self anyFullScreen]) {
         PtyLog(@"sessionInitiatedResize - in full screen mode");
         return;
     }
@@ -2438,7 +2484,7 @@ NSString *sessionsKey = @"sessions";
     if (![[self currentTab] canSplitVertically:isVertical withSize:newSessionSize]) {
         // Test if the window can afford to grow. First, compute the minimum growth possible based on
         // the font size of the new pane.
-        BOOL hasScrollbar = !_fullScreen && ![[PreferencePanel sharedInstance] hideScrollbar];
+        BOOL hasScrollbar = ![self anyFullScreen] && ![[PreferencePanel sharedInstance] hideScrollbar];
         NSSize growth = NSMakeSize(isVertical ? newSessionSize.width : 0,
                                    isVertical ? 0 : newSessionSize.height);
         growth = [PTYScrollView frameSizeForContentSize:growth
@@ -2623,7 +2669,7 @@ NSString *sessionsKey = @"sessions";
 
 - (BOOL)fitWindowToTabSize:(NSSize)tabSize
 {
-    if (_fullScreen) {
+    if ([self anyFullScreen]) {
         [self fitTabsToWindow];
         return NO;
     }
@@ -2983,7 +3029,7 @@ NSString *sessionsKey = @"sessions";
 
 - (void)adjustFullScreenWindowForBottomBarChange
 {
-    if (!_fullScreen) {
+    if (![self anyFullScreen]) {
         return;
     }
     PtyLog(@"adjustFullScreenWindowForBottomBarChange");
@@ -3045,7 +3091,7 @@ NSString *sessionsKey = @"sessions";
 {
     if (![[PreferencePanel sharedInstance] showWindowBorder]) {
         return NO;
-    } else if (_fullScreen || windowType_ == WINDOW_TYPE_TOP) {
+    } else if ([self anyFullScreen] || windowType_ == WINDOW_TYPE_TOP) {
         return NO;
     } else {
         return YES;
@@ -3059,7 +3105,7 @@ NSString *sessionsKey = @"sessions";
     BOOL topTabBar = ([[PreferencePanel sharedInstance] tabViewType] == PSMTab_TopTab);
     if (![[PreferencePanel sharedInstance] showWindowBorder]) {
         return NO;
-    } else if (_fullScreen || windowType_ == WINDOW_TYPE_TOP) {
+    } else if ([self anyFullScreen] || windowType_ == WINDOW_TYPE_TOP) {
         // Only normal windows can have a left border
         return NO;
     } else if (![bottomBar isHidden]) {
@@ -3081,7 +3127,7 @@ NSString *sessionsKey = @"sessions";
 {
     if (![[PreferencePanel sharedInstance] showWindowBorder]) {
         return NO;
-    } else if (_fullScreen || windowType_ == WINDOW_TYPE_TOP) {
+    } else if ([self anyFullScreen] || windowType_ == WINDOW_TYPE_TOP) {
         return NO;
     } else if ([[PreferencePanel sharedInstance] hideScrollbar]) {
         // hidden scrollbar
@@ -3227,7 +3273,7 @@ NSString *sessionsKey = @"sessions";
         return;
     }
 
-    BOOL hasScrollbar = !_fullScreen && ![[PreferencePanel sharedInstance] hideScrollbar];
+    BOOL hasScrollbar = ![self anyFullScreen] && ![[PreferencePanel sharedInstance] hideScrollbar];
     NSWindow *thisWindow = [self window];
     [thisWindow setShowsResizeIndicator:hasScrollbar];
     if ([TABVIEW numberOfTabViewItems] == 1 &&
@@ -3448,12 +3494,12 @@ NSString *sessionsKey = @"sessions";
 
     if (windowType_ == WINDOW_TYPE_TOP) {
         NSRect windowFrame = [[self window] frame];
-        BOOL hasScrollbar = !_fullScreen && ![[PreferencePanel sharedInstance] hideScrollbar];
+        BOOL hasScrollbar = ![self anyFullScreen] && ![[PreferencePanel sharedInstance] hideScrollbar];
         NSSize contentSize = [PTYScrollView contentSizeForFrameSize:windowFrame.size
                                               hasHorizontalScroller:NO
                                                 hasVerticalScroller:hasScrollbar
                                                          borderType:NSNoBorder];
-        
+
         columns = (contentSize.width - MARGIN*2) / charSize.width;
     }
     if (size == nil && [TABVIEW numberOfTabViewItems] != 0) {
@@ -3463,7 +3509,7 @@ NSString *sessionsKey = @"sessions";
     }
     NSRect sessionRect;
     if (size != nil) {
-        BOOL hasScrollbar = !_fullScreen && ![[PreferencePanel sharedInstance] hideScrollbar];
+        BOOL hasScrollbar = ![self anyFullScreen] && ![[PreferencePanel sharedInstance] hideScrollbar];
         NSSize contentSize = [PTYScrollView contentSizeForFrameSize:*size
                                               hasHorizontalScroller:NO
                                                 hasVerticalScroller:hasScrollbar
@@ -3509,7 +3555,7 @@ NSString *sessionsKey = @"sessions";
         return;
     }
     PtyLog(@"safelySetSessionSize");
-    BOOL hasScrollbar = !_fullScreen && ![[PreferencePanel sharedInstance] hideScrollbar];
+    BOOL hasScrollbar = ![self anyFullScreen] && ![[PreferencePanel sharedInstance] hideScrollbar];
     if (windowType_ == WINDOW_TYPE_NORMAL) {
         int width = columns;
         int height = rows;
@@ -4113,14 +4159,21 @@ NSString *sessionsKey = @"sessions";
         }
     }
 
+    // On Lion, a window that can join all spaces can't go fullscreen.
     if ([self numberOfTabs] == 1 &&
         [addressbookEntry objectForKey:KEY_SPACE] &&
         [[addressbookEntry objectForKey:KEY_SPACE] intValue] == -1) {
-        [[self window] setCollectionBehavior:NSWindowCollectionBehaviorCanJoinAllSpaces];
+        [[self window] setCollectionBehavior:[[self window] collectionBehavior] | NSWindowCollectionBehaviorCanJoinAllSpaces];
     }
 
     [aSession release];
     return aSession;
+}
+
+- (NSApplicationPresentationOptions)window:(NSWindow *)window
+      willUseFullScreenPresentationOptions:(NSApplicationPresentationOptions)proposedOptions
+{
+    return proposedOptions | NSApplicationPresentationAutoHideToolbar;
 }
 
 

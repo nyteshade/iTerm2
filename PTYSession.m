@@ -293,7 +293,7 @@ static NSString* SESSION_ARRANGEMENT_WORKING_DIRECTORY = @"Working Directory";
 
     // Allocate a scrollview
     SCROLLVIEW = [[PTYScrollView alloc] initWithFrame: NSMakeRect(0, 0, aRect.size.width, aRect.size.height)];
-    [SCROLLVIEW setHasVerticalScroller:(![parent fullScreen] &&
+    [SCROLLVIEW setHasVerticalScroller:(![parent anyFullScreen] &&
                                         ![[PreferencePanel sharedInstance] hideScrollbar])];
     NSParameterAssert(SCROLLVIEW != nil);
     [SCROLLVIEW setAutoresizingMask: NSViewWidthSizable|NSViewHeightSizable];
@@ -348,7 +348,7 @@ static NSString* SESSION_ARRANGEMENT_WORKING_DIRECTORY = @"Working Directory";
         [SCROLLVIEW setDocumentCursor: [PTYTextView textViewCursor]];
         [SCROLLVIEW setLineScroll:[TEXTVIEW lineHeight]];
         [SCROLLVIEW setPageScroll:2*[TEXTVIEW lineHeight]];
-        [SCROLLVIEW setHasVerticalScroller:(![parent fullScreen] &&
+        [SCROLLVIEW setHasVerticalScroller:(![parent anyFullScreen] &&
                                             ![[PreferencePanel sharedInstance] hideScrollbar])];
 
         ai_code=0;
@@ -2594,7 +2594,7 @@ static long long timeInTenthsOfSeconds(struct timeval t)
         return;
     }
     [TEXTVIEW setFont:font nafont:nafont horizontalSpacing:horizontalSpacing verticalSpacing:verticalSpacing];
-    if (![[[self tab] parentWindow] fullScreen]) {
+    if (![[[self tab] parentWindow] anyFullScreen]) {
         [[[self tab] parentWindow] fitWindowToTab:[self tab]];
     }
     // If the window isn't able to adjust, or adjust enough, make the session

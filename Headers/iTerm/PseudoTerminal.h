@@ -212,6 +212,9 @@
 // Get term number
 - (int)number;
 
+// Returns true if the window is fullscreen in either Lion-style or pre-Lion-style fullscreen.
+- (BOOL)anyFullScreen;
+
 // Make the tab at [sender tag] the foreground tab.
 - (void)selectSessionAtIndexAction:(id)sender;
 

@@ -102,6 +102,25 @@ static BOOL initDone = NO;
     shared = nil;
 }
 
+static BOOL IsLionOrLater() {
+    unsigned major;
+    unsigned minor;
+    if ([iTermController getSystemVersionMajor:&major minor:&minor bugFix:nil]) {
+        return (major == 10 && minor >= 7) || (major > 10);
+    } else {
+        return NO;
+    }
+}
+
+static BOOL IsSnowLeopardOrLater() {
+    unsigned major;
+    unsigned minor;
+    if ([iTermController getSystemVersionMajor:&major minor:&minor bugFix:nil]) {
+        return (major == 10 && minor >= 6) || (major > 10);
+    } else {
+        return NO;
+    }
+}
 
 // init
 - (id)init
@@ -409,11 +428,11 @@ static BOOL initDone = NO;
 - (void)arrangeHorizontally
 {
     [iTermExpose exitIfActive];
-    
+
     // Un-full-screen each window. This is done in two steps because
     // toggleFullScreenMode deallocs self.
     for (PseudoTerminal* t in terminalWindows) {
-        if ([t fullScreen]) {
+        if ([t anyFullScreen]) {
             [t toggleFullScreenMode:self];
         }
     }
@@ -737,7 +756,9 @@ static BOOL initDone = NO;
 
     PTYSession* session = [term addNewSession:aDict];
     if (toggle) {
-        [term toggleFullScreenMode:nil];
+        [term performSelector:@selector(toggleFullScreenMode:)
+                   withObject:nil
+                   afterDelay:0];
     }
     // This function is activated from the dock icon's context menu so make sure
     // that the new window is on top of all other apps' windows. For some reason,
@@ -987,9 +1008,14 @@ static void RollInHotkeyTerm(PseudoTerminal* term)
             break;
 
         case WINDOW_TYPE_FULL_SCREEN:
-            [[NSAnimationContext currentContext] setDuration:[[PreferencePanel sharedInstance] hotkeyTermAnimationDuration]];
-            [[[term window] animator] setAlphaValue:1];
-            [term hideMenuBar];
+            if (IsLionOrLater()) {
+                [term toggleFullScreenMode:nil];
+                [[[term window] animator] setAlphaValue:1];                
+            } else {
+                [[NSAnimationContext currentContext] setDuration:[[PreferencePanel sharedInstance] hotkeyTermAnimationDuration]];
+                [[[term window] animator] setAlphaValue:1];
+                [term hideMenuBar];
+            }
             break;
     }
     [[iTermController sharedInstance] performSelector:@selector(rollInFinished)
@@ -1044,18 +1070,8 @@ static void RollInHotkeyTerm(PseudoTerminal* term)
             *bugFix = versionBugFix;
         }
     }
-    
-    return YES;
-}
 
-static BOOL IsSnowLeopardOrLater() {
-    unsigned major;
-    unsigned minor;
-    if ([iTermController getSystemVersionMajor:&major minor:&minor bugFix:nil]) {
-        return (major == 10 && minor >= 6) || (major > 10);
-    } else {
-        return NO;
-    }
+    return YES;
 }
 
 static BOOL OpenHotkeyWindow()
@@ -1069,7 +1085,9 @@ static BOOL OpenHotkeyWindow()
         [term setIsHotKeyWindow:YES];
 
         if ([term windowType] == WINDOW_TYPE_FULL_SCREEN) {
-            [[term window] setAlphaValue:0];
+            if (!IsLionOrLater()) {
+                [[term window] setAlphaValue:0];
+            }
         } else {
             // place it above the screen so it can be rolled in.
             NSRect screenFrame = [[NSScreen mainScreen] visibleFrame];
@@ -1141,8 +1159,12 @@ static void RollOutHotkeyTerm(PseudoTerminal* term, BOOL itermWasActiveWhenHotke
             break;
 
         case WINDOW_TYPE_FULL_SCREEN:
-            [[NSAnimationContext currentContext] setDuration:[[PreferencePanel sharedInstance] hotkeyTermAnimationDuration]];
-            [[[term window] animator] setAlphaValue:0];
+           // [[NSAnimationContext currentContext] setDuration:[[PreferencePanel sharedInstance] hotkeyTermAnimationDuration]];
+            if (IsLionOrLater()) {
+                [term toggleFullScreenMode:nil];
+                return;
+            }
+          //  [[[term window] animator] setAlphaValue:0];
             break;
     }
 
