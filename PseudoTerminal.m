@@ -102,6 +102,7 @@ static NSString* TERMINAL_ARRANGEMENT_WIDTH = @"Width";
 static NSString* TERMINAL_ARRANGEMENT_HEIGHT = @"Height";
 static NSString* TERMINAL_ARRANGEMENT_TABS = @"Tabs";
 static NSString* TERMINAL_ARRANGEMENT_FULLSCREEN = @"Fullscreen";
+static NSString* TERMINAL_ARRANGEMENT_LION_FULLSCREEN = "@LionFullscreen";
 static NSString* TERMINAL_ARRANGEMENT_WINDOW_TYPE = @"Window Type";
 static NSString* TERMINAL_ARRANGEMENT_SELECTED_TAB_INDEX = @"Selected Tab Index";
 static NSString* TERMINAL_ARRANGEMENT_SCREEN_INDEX = @"Screen";
@@ -183,7 +184,9 @@ NSString *sessionsKey = @"sessions";
     [commandField retain];
     [commandField setDelegate:self];
     [bottomBar retain];
-    if (windowType == WINDOW_TYPE_FULL_SCREEN && screenNumber == -1) {
+    if ((windowType == WINDOW_TYPE_FULL_SCREEN ||
+         windowType == WINDOW_TYPE_LION_FULL_SCREEN) &&
+        screenNumber == -1) {
         NSUInteger n = [[NSScreen screens] indexOfObjectIdenticalTo:[[self window] screen]];
         if (n == NSNotFound) {
             screenNumber = 0;
@@ -227,6 +230,7 @@ NSString *sessionsKey = @"sessions";
         case WINDOW_TYPE_NORMAL:
             haveScreenPreference_ = NO;
             // fall through
+        case WINDOW_TYPE_LION_FULL_SCREEN:
         case WINDOW_TYPE_FULL_SCREEN:
             // Use the system-supplied frame which has a reasonable origin. It may
             // be overridden by smart window placement or a saved window location.
@@ -265,17 +269,13 @@ NSString *sessionsKey = @"sessions";
                            NSMiniaturizableWindowMask |
                            NSResizableWindowMask |
                            NSTexturedBackgroundWindowMask;
-    const BOOL isLionOrBetter = [[self window] respondsToSelector:@selector(toggleFullScreen:)];
-
     switch (windowType) {
         case WINDOW_TYPE_TOP:
             styleMask = NSBorderlessWindowMask;
             break;
 
         case WINDOW_TYPE_FORCE_FULL_SCREEN:
-            if (!isLionOrBetter) {
-                styleMask = NSBorderlessWindowMask;
-            }
+            styleMask = NSBorderlessWindowMask;
             break;
 
         default:
@@ -295,7 +295,7 @@ NSString *sessionsKey = @"sessions";
     [self setWindow:myWindow];
     [myWindow release];
 
-    _fullScreen = !isLionOrBetter && (windowType == WINDOW_TYPE_FORCE_FULL_SCREEN);
+    _fullScreen = (windowType == WINDOW_TYPE_FORCE_FULL_SCREEN);
     if (_fullScreen) {
         background_ = [[SolidColorView alloc] initWithFrame:[[[self window] contentView] frame] color:[NSColor blackColor]];
     } else {
@@ -799,6 +799,7 @@ NSString *sessionsKey = @"sessions";
 
 + (PseudoTerminal*)terminalWithArrangement:(NSDictionary*)arrangement
 {
+    const BOOL isLionOrBetter = [[self window] respondsToSelector:@selector(toggleFullScreen:)];
     PseudoTerminal* term;
     int windowType;
     if ([arrangement objectForKey:TERMINAL_ARRANGEMENT_WINDOW_TYPE]) {
@@ -807,6 +808,12 @@ NSString *sessionsKey = @"sessions";
         if ([arrangement objectForKey:TERMINAL_ARRANGEMENT_FULLSCREEN] &&
             [[arrangement objectForKey:TERMINAL_ARRANGEMENT_FULLSCREEN] boolValue]) {
             windowType = WINDOW_TYPE_FULL_SCREEN;
+        } else if ([[arrangement objectForKey:TERMINAL_ARRANGEMENT_LION_FULLSCREEN] boolValue]) {
+            if (isLionOrBetter) {
+                windowType = WINDOW_TYPE_LION_FULL_SCREEN;
+            } else {
+                windowType = WINDOW_TYPE_FULL_SCREEN;
+            }
         } else {
             windowType = WINDOW_TYPE_NORMAL;
         }
@@ -823,7 +830,7 @@ NSString *sessionsKey = @"sessions";
 
     if (windowType == WINDOW_TYPE_FULL_SCREEN) {
         term = [[[PseudoTerminal alloc] initWithSmartLayout:NO
-                                                 windowType:WINDOW_TYPE_NORMAL //WINDOW_TYPE_FORCE_FULL_SCREEN
+                                                 windowType:WINDOW_TYPE_FORCE_FULL_SCREEN
                                                      screen:screenIndex] autorelease];
 
         NSRect rect;
@@ -832,15 +839,19 @@ NSString *sessionsKey = @"sessions";
         rect.size.width = [[arrangement objectForKey:TERMINAL_ARRANGEMENT_OLD_WIDTH] doubleValue];
         rect.size.height = [[arrangement objectForKey:TERMINAL_ARRANGEMENT_OLD_HEIGHT] doubleValue];
         term->oldFrame_ = rect;
-        if ([[term window] respondsToSelector:@selector(toggleFullScreen:)]) {
-            [term performSelector:@selector(toggleFullScreenMode:)
-                       withObject:nil
-                       afterDelay:0];
-        }
+    } else if (windowType == WINDOW_TYPE_LION_FULL_SCREEN) {
+        term = [[[PseudoTerminal alloc] initWithSmartLayout:NO
+                                                 windowType:WINDOW_TYPE_LION_FULL_SCREEN
+                                                     screen:screenIndex] autorelease];
+
+        [term performSelector:@selector(toggleFullScreenMode:)
+                   withObject:nil
+                   afterDelay:0];
     } else {
         if (windowType == WINDOW_TYPE_NORMAL) {
             screenIndex = -1;
         }
+        // TODO: this looks like a bug - are top-of-screen windows not restored to the right screen?
         term = [[[PseudoTerminal alloc] initWithSmartLayout:NO windowType:windowType screen:-1] autorelease];
 
         NSRect rect;
@@ -1092,6 +1103,7 @@ NSString *sessionsKey = @"sessions";
             [[self window] setFrame:frame display:YES];
             break;
 
+        case WINDOW_TYPE_LION_FULL_SCREEN:
         case WINDOW_TYPE_FULL_SCREEN:
             [[self window] setFrame:[screen frame] display:YES];
             break;
@@ -1322,16 +1334,23 @@ NSString *sessionsKey = @"sessions";
 
 - (IBAction)toggleFullScreenMode:(id)sender
 {
-    if ([[self window] respondsToSelector:@selector(toggleFullScreen:)]) {
+    if (windowType_ != WINDOW_TYPE_FULL_SCREEN &&
+        [[self window] respondsToSelector:@selector(toggleFullScreen:)]) {
+        // Is 10.7 Lion or later.
         [[self window] toggleFullScreen:self];
         if ([[self window] isFullScreen]) {
-            windowType_ = WINDOW_TYPE_FULL_SCREEN;
+            windowType_ = WINDOW_TYPE_LION_FULL_SCREEN;
         } else {
             windowType_ = WINDOW_TYPE_NORMAL;
         }
         return;
     }
 
+    [self toggleTraditionalFullScreenMode];
+}
+
+- (void)toggleTraditionalFullScreenMode
+{
     [SessionView windowDidResize];
     if (windowType_ == WINDOW_TYPE_TOP) {
         // TODO: would be nice if you could toggle top windows to fullscreen

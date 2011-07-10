@@ -1007,15 +1007,11 @@ static void RollInHotkeyTerm(PseudoTerminal* term)
             [[[term window] animator] setAlphaValue:1];
             break;
 
+        case WINDOW_TYPE_LION_FULL_SCREEN:  // Shouldn't happen
         case WINDOW_TYPE_FULL_SCREEN:
-            if (IsLionOrLater()) {
-                [term toggleFullScreenMode:nil];
-                [[[term window] animator] setAlphaValue:1];                
-            } else {
-                [[NSAnimationContext currentContext] setDuration:[[PreferencePanel sharedInstance] hotkeyTermAnimationDuration]];
-                [[[term window] animator] setAlphaValue:1];
-                [term hideMenuBar];
-            }
+            [[NSAnimationContext currentContext] setDuration:[[PreferencePanel sharedInstance] hotkeyTermAnimationDuration]];
+            [[[term window] animator] setAlphaValue:1];
+            [term hideMenuBar];
             break;
     }
     [[iTermController sharedInstance] performSelector:@selector(rollInFinished)
@@ -1080,14 +1076,20 @@ static BOOL OpenHotkeyWindow()
     iTermController* cont = [iTermController sharedInstance];
     Bookmark* bookmark = [[PreferencePanel sharedInstance] hotkeyBookmark];
     if (bookmark) {
+        if ([[bookmark objectForKey:KEY_WINDOW_TYPE] intValue] == WINDOW_TYPE_LION_FULL_SCREEN) {
+            // Lion fullscreen doesn't make sense with hotkey windows. Change
+            // window type to traditional fullscreen.
+            NSMutableDictionary* replacement = [NSMutableDictionary dictionaryWithDictionary:bookmark];
+            [replacement setObject:[NSNumber numberWithInt:WINDOW_TYPE_FULL_SCREEN]
+                            forKey:KEY_WINDOW_TYPE];
+            bookmark = replacement;
+        }
         PTYSession* session = [cont launchBookmark:bookmark inTerminal:nil];
         PseudoTerminal* term = [[session tab] realParentWindow];
         [term setIsHotKeyWindow:YES];
 
         if ([term windowType] == WINDOW_TYPE_FULL_SCREEN) {
-            if (!IsLionOrLater()) {
-                [[term window] setAlphaValue:0];
-            }
+            [[term window] setAlphaValue:0];
         } else {
             // place it above the screen so it can be rolled in.
             NSRect screenFrame = [[NSScreen mainScreen] visibleFrame];
@@ -1158,13 +1160,10 @@ static void RollOutHotkeyTerm(PseudoTerminal* term, BOOL itermWasActiveWhenHotke
             [[[term window] animator] setAlphaValue:0];
             break;
 
+        case WINDOW_TYPE_LION_FULL_SCREEN:  // Shouldn't happen
         case WINDOW_TYPE_FULL_SCREEN:
-           // [[NSAnimationContext currentContext] setDuration:[[PreferencePanel sharedInstance] hotkeyTermAnimationDuration]];
-            if (IsLionOrLater()) {
-                [term toggleFullScreenMode:nil];
-                return;
-            }
-          //  [[[term window] animator] setAlphaValue:0];
+            [[NSAnimationContext currentContext] setDuration:[[PreferencePanel sharedInstance] hotkeyTermAnimationDuration]];
+            [[[term window] animator] setAlphaValue:0];
             break;
     }
 
@@ -1296,6 +1295,7 @@ static void RollOutHotkeyTerm(PseudoTerminal* term, BOOL itermWasActiveWhenHotke
                 [[term window] setFrame:rect display:YES];
                 break;
 
+            case WINDOW_TYPE_LION_FULL_SCREEN:  // Shouldn't happen.
             case WINDOW_TYPE_FULL_SCREEN:
                 [[term window] setAlphaValue:0];
                 break;
