@@ -1173,6 +1173,7 @@
 			};
 			buildConfigurationList = BB024D39096EE4080021E793 /* Build configuration list for PBXProject "iTerm" */;
 			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
 			knownRegions = (
 				English,
@@ -1530,10 +1531,10 @@
 				HEADER_SEARCH_PATHS = Headers/iTerm/;
 				INFOPLIST_FILE = iTerm.plist;
 				LINK_WITH_STANDARD_LIBRARIES = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_LDFLAGS = "-licucore";
 				PRODUCT_NAME = iTerm;
-				SDKROOT = macosx10.7;
+				SDKROOT = macosx10.5;
 				SECTORDER_FLAGS = "";
 				VALID_ARCHS = "i386 x86_64 ppc";
 				WARNING_CFLAGS = "-Wall";
@@ -1562,10 +1563,10 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = iTerm.plist;
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_LDFLAGS = "-licucore";
 				PRODUCT_NAME = iTerm;
-				SDKROOT = macosx10.7;
+				SDKROOT = macosx10.5;
 				VALID_ARCHS = "i386 x86_64 ppc";
 				WARNING_CFLAGS = "-Wall";
 				WRAPPER_EXTENSION = app;
@@ -1593,12 +1594,12 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = iTerm.plist;
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_LDFLAGS = "-licucore";
 				OTHER_REZFLAGS = "";
 				PRODUCT_NAME = iTerm;
 				REZ_EXECUTABLE = YES;
-				SDKROOT = macosx10.7;
+				SDKROOT = macosx10.5;
 				SECTORDER_FLAGS = "";
 				VALID_ARCHS = "i386 x86_64 ppc";
 				WARNING_CFLAGS = "-Wall";
@@ -1622,8 +1623,8 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_PROFILING_CODE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
-				SDKROOT = macosx10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				SDKROOT = macosx10.5;
 				VALID_ARCHS = "i386 x86_64 ppc";
 				WARNING_CFLAGS = "-Wall";
 			};
@@ -1643,8 +1644,8 @@
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_PROTOTYPE_CONVERSION = NO;
 				GCC_WARN_SIGN_COMPARE = NO;
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
-				SDKROOT = macosx;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				SDKROOT = macosx10.5;
 				VALID_ARCHS = "i386 x86_64 ppc";
 				WARNING_CFLAGS = "-Wall";
 			};
@@ -1663,8 +1664,8 @@
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_PROTOTYPE_CONVERSION = NO;
 				GCC_WARN_SIGN_COMPARE = NO;
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
-				SDKROOT = macosx;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				SDKROOT = macosx10.5;
 				VALID_ARCHS = "i386 x86_64 ppc";
 				WARNING_CFLAGS = "-Wall";
 			};
@@ -1691,7 +1692,7 @@
 					Carbon,
 				);
 				PRODUCT_NAME = Growl;
-				SDKROOT = macosx;
+				SDKROOT = macosx10.5;
 				VALID_ARCHS = "i386 x86_64 ppc";
 				ZERO_LINK = YES;
 			};
@@ -1717,7 +1718,7 @@
 					Carbon,
 				);
 				PRODUCT_NAME = Growl;
-				SDKROOT = macosx;
+				SDKROOT = macosx10.5;
 				VALID_ARCHS = "i386 x86_64 ppc";
 				ZERO_LINK = NO;
 			};
@@ -1741,7 +1742,7 @@
 					Carbon,
 				);
 				PRODUCT_NAME = Growl;
-				SDKROOT = macosx;
+				SDKROOT = macosx10.5;
 				VALID_ARCHS = "i386 x86_64 ppc";
 				ZERO_LINK = YES;
 			};

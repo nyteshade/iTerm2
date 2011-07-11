@@ -305,6 +305,9 @@
 // one's state into it.
 - (IBAction)toggleFullScreenMode:(id)sender;
 
+// Enter full screen mode in the next mainloop.
+- (void)delayedEnterFullscreen;
+
 // Toggle non-Lion fullscreen mode.
 - (void)toggleTraditionalFullScreenMode;
 

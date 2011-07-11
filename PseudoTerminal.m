@@ -71,9 +71,11 @@
 
 #define ITLocalizedString(key) NSLocalizedStringFromTableInBundle(key, @"iTerm", [NSBundle bundleForClass:[self class]], @"Context menu")
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
+#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_5
 static const int NSWindowCollectionBehaviorFullScreenPrimary = 1 << 7;
 static const int NSApplicationPresentationAutoHideToolbar = (1 << 11);
+static const int NSApplicationPresentationAutoHideToolbar = XXX;
+typedef NSUInteger NSApplicationPresentationOptions;
 #endif
 
 // #define PSEUDOTERMINAL_VERBOSE_LOGGING
@@ -102,7 +104,7 @@ static NSString* TERMINAL_ARRANGEMENT_WIDTH = @"Width";
 static NSString* TERMINAL_ARRANGEMENT_HEIGHT = @"Height";
 static NSString* TERMINAL_ARRANGEMENT_TABS = @"Tabs";
 static NSString* TERMINAL_ARRANGEMENT_FULLSCREEN = @"Fullscreen";
-static NSString* TERMINAL_ARRANGEMENT_LION_FULLSCREEN = "@LionFullscreen";
+static NSString* TERMINAL_ARRANGEMENT_LION_FULLSCREEN = @"LionFullscreen";
 static NSString* TERMINAL_ARRANGEMENT_WINDOW_TYPE = @"Window Type";
 static NSString* TERMINAL_ARRANGEMENT_SELECTED_TAB_INDEX = @"Selected Tab Index";
 static NSString* TERMINAL_ARRANGEMENT_SCREEN_INDEX = @"Screen";

@@ -89,7 +89,11 @@ int gDebugLogFile = -1;
     [ITAddressBookMgr sharedInstance];
     [PreferencePanel sharedInstance];
 
-    [NSApp setPresentationOptions:[NSApp currentSystemPresentationOptions] | NSApplicationPresentationFullScreen];
+    if ([NSApp respondsToSelector:@selector(presentationOptions)]) {
+        id NSAppObj = NSApp;
+        NSUInteger presentationOptions = [NSAppObj presentationOptions] | NSApplicationPresentationFullScreen;
+        [NSAppObj setPresentationOptions:presentationOptions];
+    }
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
