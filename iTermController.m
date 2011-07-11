@@ -762,16 +762,15 @@ static BOOL IsSnowLeopardOrLater() {
                                                  windowType:[aDict objectForKey:KEY_WINDOW_TYPE] ? [[aDict objectForKey:KEY_WINDOW_TYPE] intValue] : WINDOW_TYPE_NORMAL
                                                      screen:[aDict objectForKey:KEY_SCREEN] ? [[aDict objectForKey:KEY_SCREEN] intValue] : -1] autorelease];
         [self addInTerminals:term];
-        toggle = [term windowType] == WINDOW_TYPE_FULL_SCREEN;
+        toggle = ([term windowType] == WINDOW_TYPE_FULL_SCREEN) ||
+                 ([term windowType] == WINDOW_TYPE_LION_FULL_SCREEN);
     } else {
         term = theTerm;
     }
 
     PTYSession* session = [term addNewSession:aDict];
     if (toggle) {
-        [term performSelector:@selector(toggleFullScreenMode:)
-                   withObject:nil
-                   afterDelay:0];
+        [term delayedEnterFullscreen];
     }
     // This function is activated from the dock icon's context menu so make sure
     // that the new window is on top of all other apps' windows. For some reason,
@@ -808,14 +807,15 @@ static BOOL IsSnowLeopardOrLater() {
                                                  windowType:[aDict objectForKey:KEY_WINDOW_TYPE] ? [[aDict objectForKey:KEY_WINDOW_TYPE] intValue] : WINDOW_TYPE_NORMAL
                                                      screen:[aDict objectForKey:KEY_SCREEN] ? [[aDict objectForKey:KEY_SCREEN] intValue] : -1] autorelease];
         [self addInTerminals:term];
-        toggle = [term windowType] == WINDOW_TYPE_FULL_SCREEN;
+        toggle = (([term windowType] == WINDOW_TYPE_FULL_SCREEN) ||
+                  ([term windowType] == WINDOW_TYPE_LION_FULL_SCREEN));
     } else {
         term = theTerm;
     }
 
     id result = [term addNewSession:aDict withCommand:command asLoginSession:NO];
     if (toggle) {
-        [term toggleFullScreenMode:nil];
+        [term delayedEnterFullscreen];
     }
     return result;
 }
@@ -891,14 +891,15 @@ static BOOL IsSnowLeopardOrLater() {
                                                  windowType:[aDict objectForKey:KEY_WINDOW_TYPE] ? [[aDict objectForKey:KEY_WINDOW_TYPE] intValue] : WINDOW_TYPE_NORMAL
                                                      screen:[aDict objectForKey:KEY_SCREEN] ? [[aDict objectForKey:KEY_SCREEN] intValue] : -1] autorelease];
         [self addInTerminals: term];
-        toggle = [term windowType] == WINDOW_TYPE_FULL_SCREEN;
+        toggle = (([term windowType] == WINDOW_TYPE_FULL_SCREEN) ||
+                  ([term windowType] == WINDOW_TYPE_LION_FULL_SCREEN));
     } else {
         term = theTerm;
     }
 
     id result = [term addNewSession: aDict withURL: url];
     if (toggle) {
-        [term toggleFullScreenMode:nil];
+        [term delayedEnterFullscreen];
     }
     return result;
 }

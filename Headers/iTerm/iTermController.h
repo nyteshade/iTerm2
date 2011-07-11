@@ -58,6 +58,9 @@
 
 + (iTermController*)sharedInstance;
 + (void)sharedInstanceRelease;
++ (BOOL)getSystemVersionMajor:(unsigned *)major
+                        minor:(unsigned *)minor
+                       bugFix:(unsigned *)bugFix;
 
 + (void)switchToSpaceInBookmark:(NSDictionary*)aDict;
 - (BOOL)rollingInHotkeyTerm;

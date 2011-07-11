@@ -128,6 +128,16 @@ NSString *sessionsKey = @"sessions";
 
 @class PTYSession, iTermController, PTToolbarController, PSMTabBarControl;
 
+static BOOL IsLionOrLater() {
+    unsigned major;
+    unsigned minor;
+    if ([iTermController getSystemVersionMajor:&major minor:&minor bugFix:nil]) {
+        return (major == 10 && minor >= 7) || (major > 10);
+    } else {
+        return NO;
+    }
+}
+
 @implementation SolidColorView
 - (id)initWithFrame:(NSRect)frame color:(NSColor*)color
 {
@@ -799,7 +809,6 @@ NSString *sessionsKey = @"sessions";
 
 + (PseudoTerminal*)terminalWithArrangement:(NSDictionary*)arrangement
 {
-    const BOOL isLionOrBetter = [[self window] respondsToSelector:@selector(toggleFullScreen:)];
     PseudoTerminal* term;
     int windowType;
     if ([arrangement objectForKey:TERMINAL_ARRANGEMENT_WINDOW_TYPE]) {
@@ -809,7 +818,7 @@ NSString *sessionsKey = @"sessions";
             [[arrangement objectForKey:TERMINAL_ARRANGEMENT_FULLSCREEN] boolValue]) {
             windowType = WINDOW_TYPE_FULL_SCREEN;
         } else if ([[arrangement objectForKey:TERMINAL_ARRANGEMENT_LION_FULLSCREEN] boolValue]) {
-            if (isLionOrBetter) {
+            if (IsLionOrLater()) {
                 windowType = WINDOW_TYPE_LION_FULL_SCREEN;
             } else {
                 windowType = WINDOW_TYPE_FULL_SCREEN;
@@ -843,10 +852,7 @@ NSString *sessionsKey = @"sessions";
         term = [[[PseudoTerminal alloc] initWithSmartLayout:NO
                                                  windowType:WINDOW_TYPE_LION_FULL_SCREEN
                                                      screen:screenIndex] autorelease];
-
-        [term performSelector:@selector(toggleFullScreenMode:)
-                   withObject:nil
-                   afterDelay:0];
+        [term delayedEnterFullscreen];
     } else {
         if (windowType == WINDOW_TYPE_NORMAL) {
             screenIndex = -1;
@@ -1334,6 +1340,9 @@ NSString *sessionsKey = @"sessions";
 
 - (BOOL)useTransparency
 {
+    if ([self lionFullScreen]) {
+        return NO;
+    }
     return useTransparency_;
 }
 
@@ -1348,10 +1357,26 @@ NSString *sessionsKey = @"sessions";
         } else {
             windowType_ = WINDOW_TYPE_NORMAL;
         }
+        // TODO(georgen): toggle enabled status of use transparency menu item
         return;
     }
 
     [self toggleTraditionalFullScreenMode];
+}
+
+- (void)delayedEnterFullscreen
+{
+    if (IsLionOrLater() && windowType_ == WINDOW_TYPE_LION_FULL_SCREEN) {
+        if (![[[iTermController sharedInstance] keyTerminalWindow] lionFullScreen]) {
+            [self performSelector:@selector(toggleFullScreenMode:)
+                       withObject:nil
+                       afterDelay:0];
+        }
+    } else if (!_fullScreen) {
+        [self performSelector:@selector(toggleTraditionalFullScreenMode)
+                   withObject:nil
+                   afterDelay:0];
+    }
 }
 
 - (void)toggleTraditionalFullScreenMode
@@ -4517,14 +4542,15 @@ NSString *sessionsKey = @"sessions";
         [self initWithSmartLayout:NO 
                        windowType:windowType
                            screen:-1];
-        toggle = windowType == WINDOW_TYPE_FULL_SCREEN;
+        toggle = ([self windowType] == WINDOW_TYPE_FULL_SCREEN) ||
+                 ([self windowType] == WINDOW_TYPE_LION_FULL_SCREEN);
     }
 
     // launch the session!
     id rv = [[iTermController sharedInstance] launchBookmark:abEntry
                                                  inTerminal:self];
     if (toggle) {
-        [self toggleFullScreenMode:self];
+        [self delayedEnterFullscreen];
     }
     return rv;
 }
