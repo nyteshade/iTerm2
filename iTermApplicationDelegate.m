@@ -91,7 +91,9 @@ int gDebugLogFile = -1;
 
     if ([NSApp respondsToSelector:@selector(presentationOptions)]) {
         id NSAppObj = NSApp;
-        NSUInteger presentationOptions = [NSAppObj presentationOptions] | NSApplicationPresentationFullScreen;
+        // TODO: Use NSInvocation to avoid warnings here.
+        NSUInteger presentationOptions = (NSUInteger)[NSAppObj presentationOptions];
+        presentationOptions |= NSApplicationPresentationFullScreen;
         [NSAppObj setPresentationOptions:presentationOptions];
     }
 }

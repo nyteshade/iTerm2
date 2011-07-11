@@ -34,4 +34,11 @@
 #define OSX_TIGERORLATER (floor(NSAppKitVersionNumber) > 743)
 #define OSX_LEOPARDORLATER (floor(NSAppKitVersionNumber) > 824)
 
+#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_5
+static const int NSWindowCollectionBehaviorFullScreenPrimary = 1 << 7;
+static const int NSApplicationPresentationAutoHideToolbar = (1 << 11);
+static const int NSApplicationPresentationFullScreen = (1 << 10);
+typedef unsigned int NSApplicationPresentationOptions;
+#endif
+
 #endif // _ITERM_H_

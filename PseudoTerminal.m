@@ -71,14 +71,6 @@
 
 #define ITLocalizedString(key) NSLocalizedStringFromTableInBundle(key, @"iTerm", [NSBundle bundleForClass:[self class]], @"Context menu")
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_5
-static const int NSWindowCollectionBehaviorFullScreenPrimary = 1 << 7;
-static const int NSApplicationPresentationAutoHideToolbar = (1 << 11);
-static const int NSApplicationPresentationFullScreen = (1 << 10);
-static const int NSApplicationPresentationAutoHideToolbar = (1 << 11);
-typedef NSUInteger NSApplicationPresentationOptions;
-#endif
-
 // #define PSEUDOTERMINAL_VERBOSE_LOGGING
 #ifdef PSEUDOTERMINAL_VERBOSE_LOGGING
 #define PtyLog NSLog
