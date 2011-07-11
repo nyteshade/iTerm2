@@ -300,7 +300,8 @@ static BOOL IsSnowLeopardOrLater() {
 {
     NSMutableArray* result = [NSMutableArray arrayWithCapacity:0];
     for (PseudoTerminal* term in terminalWindows) {
-        if ([[term window] deepestScreen] == screen) {
+        if (![term isHotKeyWindow] &&
+            [[term window] deepestScreen] == screen) {
             [result addObject:term];
         }
     }
@@ -431,10 +432,19 @@ static BOOL IsSnowLeopardOrLater() {
 
     // Un-full-screen each window. This is done in two steps because
     // toggleFullScreenMode deallocs self.
+    PseudoTerminal* waitFor = nil;
     for (PseudoTerminal* t in terminalWindows) {
         if ([t anyFullScreen]) {
+            if ([t lionFullScreen]) {
+                waitFor = t;
+            }
             [t toggleFullScreenMode:self];
         }
+    }
+
+    if (waitFor) {
+        [self performSelector:@selector(arrangeHorizontally) withObject:nil afterDelay:0.5];
+        return;
     }
 
     // For each screen, find the terminals in it and arrange them. This way
@@ -442,6 +452,9 @@ static BOOL IsSnowLeopardOrLater() {
     for (NSScreen* screen in [NSScreen screens]) {
         [self arrangeTerminals:[self _terminalsInScreen:screen]
                        inFrame:[screen visibleFrame]];
+    }
+    for (PseudoTerminal* t in terminalWindows) {
+        [[t window] orderFront:nil];
     }
 }
 

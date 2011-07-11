@@ -1189,6 +1189,11 @@ NSString *sessionsKey = @"sessions";
     return _fullScreen || [[self window] isFullScreen];
 }
 
+- (BOOL)lionFullScreen
+{
+    return [[self window] isFullScreen];
+}
+
 - (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)proposedFrameSize
 {
     PtyLog(@"%s(%d):-[PseudoTerminal windowWillResize: obj=%d, proposedFrameSize width = %f; height = %f]",
