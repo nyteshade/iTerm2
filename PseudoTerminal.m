@@ -123,16 +123,6 @@ NSString *sessionsKey = @"sessions";
 
 @class PTYSession, iTermController, PTToolbarController, PSMTabBarControl;
 
-static BOOL IsLionOrLater() {
-    unsigned major;
-    unsigned minor;
-    if ([iTermController getSystemVersionMajor:&major minor:&minor bugFix:nil]) {
-        return (major == 10 && minor >= 7) || (major > 10);
-    } else {
-        return NO;
-    }
-}
-
 @implementation SolidColorView
 - (id)initWithFrame:(NSRect)frame color:(NSColor*)color
 {
@@ -189,6 +179,10 @@ static BOOL IsLionOrLater() {
     [commandField retain];
     [commandField setDelegate:self];
     [bottomBar retain];
+    if (windowType == WINDOW_TYPE_LION_FULL_SCREEN &&
+        ![[PreferencePanel sharedInstance] lionStyleFullscreen]) {
+        windowType = WINDOW_TYPE_FULL_SCREEN;
+    }
     if ((windowType == WINDOW_TYPE_FULL_SCREEN ||
          windowType == WINDOW_TYPE_LION_FULL_SCREEN) &&
         screenNumber == -1) {
@@ -818,7 +812,7 @@ static BOOL IsLionOrLater() {
             [[arrangement objectForKey:TERMINAL_ARRANGEMENT_FULLSCREEN] boolValue]) {
             windowType = WINDOW_TYPE_FULL_SCREEN;
         } else if ([[arrangement objectForKey:TERMINAL_ARRANGEMENT_LION_FULLSCREEN] boolValue]) {
-            if (IsLionOrLater()) {
+            if (IsLionOrLater() || ![[PreferencePanel sharedInstance] lionStyleFullscreen]) {
                 windowType = WINDOW_TYPE_LION_FULL_SCREEN;
             } else {
                 windowType = WINDOW_TYPE_FULL_SCREEN;
@@ -1348,7 +1342,9 @@ static BOOL IsLionOrLater() {
 
 - (IBAction)toggleFullScreenMode:(id)sender
 {
-    if (windowType_ != WINDOW_TYPE_FULL_SCREEN && IsLionOrLater()) {
+    if (windowType_ != WINDOW_TYPE_FULL_SCREEN &&
+        IsLionOrLater() &&
+        [[PreferencePanel sharedInstance] lionStyleFullscreen]) {
         // Is 10.7 Lion or later.
         [[self ptyWindow] performSelector:@selector(toggleFullScreen:) withObject:self];
         if ([[self ptyWindow] isFullScreen]) {
@@ -1365,7 +1361,9 @@ static BOOL IsLionOrLater() {
 
 - (void)delayedEnterFullscreen
 {
-    if (IsLionOrLater() && windowType_ == WINDOW_TYPE_LION_FULL_SCREEN) {
+    if (IsLionOrLater() &&
+        windowType_ == WINDOW_TYPE_LION_FULL_SCREEN &&
+        [[PreferencePanel sharedInstance] lionStyleFullscreen]) {
         if (![[[iTermController sharedInstance] keyTerminalWindow] lionFullScreen]) {
             [self performSelector:@selector(toggleFullScreenMode:)
                        withObject:nil

@@ -523,6 +523,12 @@ static float versionNumber;
     }
     [[tags cell] setDelegate:self];
     [tags setDelegate:self];
+
+    if (IsLionOrLater()) {
+        [spaceLabel setHidden:YES];
+        [spaceButton setHidden:YES];
+        [lionStyleFullscreen setEnabled:YES];
+    }
 }
 
 - (void)handleWindowWillCloseNotification:(NSNotification *)notification
@@ -911,6 +917,7 @@ static float versionNumber;
     defaultCheckTestRelease = [prefs objectForKey:@"CheckTestRelease"]?[[prefs objectForKey:@"CheckTestRelease"] boolValue]: YES;
     defaultDimInactiveSplitPanes = [prefs objectForKey:@"DimInactiveSplitPanes"]?[[prefs objectForKey:@"DimInactiveSplitPanes"] boolValue]: YES;
     defaultShowWindowBorder = [[prefs objectForKey:@"UseBorder"] boolValue];
+    defaultLionStyleFullscreen = IsLionOrLater() && [[prefs objectForKey:@"UseLionStyleFullscreen"] boolValue];
 
     defaultControl = [prefs objectForKey:@"Control"] ? [[prefs objectForKey:@"Control"] intValue] : MOD_TAG_CONTROL;
     defaultLeftOption = [prefs objectForKey:@"LeftOption"] ? [[prefs objectForKey:@"LeftOption"] intValue] : MOD_TAG_LEFT_OPTION;
@@ -1040,6 +1047,7 @@ static float versionNumber;
     [prefs setBool:defaultCheckTestRelease forKey:@"CheckTestRelease"];
     [prefs setBool:defaultDimInactiveSplitPanes forKey:@"DimInactiveSplitPanes"];
     [prefs setBool:defaultShowWindowBorder forKey:@"UseBorder"];
+    [prefs setBool:defaultLionStyleFullscreen forKey:@"LionStyleFullscreen"];
 
     [prefs setInteger:defaultControl forKey:@"Control"];
     [prefs setInteger:defaultLeftOption forKey:@"LeftOption"];
@@ -1132,6 +1140,7 @@ static float versionNumber;
     [checkTestRelease setState:defaultCheckTestRelease?NSOnState:NSOffState];
     [dimInactiveSplitPanes setState:defaultDimInactiveSplitPanes?NSOnState:NSOffState];
     [showWindowBorder setState:defaultShowWindowBorder?NSOnState:NSOffState];
+    [lionStyleFullscreen setState:defaultLionStyleFullscreen?NSOnState:NSOffState];
 
     [self showWindow: self];
     [[self window] setLevel:NSNormalWindowLevel];
@@ -1675,6 +1684,11 @@ static float versionNumber;
 - (BOOL)showWindowBorder
 {
     return defaultShowWindowBorder;
+}
+
+- (BOOL)lionStyleFullscreen
+{
+    return defaultLionStyleFullscreen;
 }
 
 - (BOOL)checkTestRelease

@@ -80,6 +80,15 @@ static NSInteger _compareEncodingByLocalizedName(id a, id b, void *unused)
     return [sa caseInsensitiveCompare: sb];
 }
 
+BOOL IsLionOrLater() {
+    unsigned major;
+    unsigned minor;
+    if ([iTermController getSystemVersionMajor:&major minor:&minor bugFix:nil]) {
+        return (major == 10 && minor >= 7) || (major > 10);
+    } else {
+        return NO;
+    }
+}
 
 @implementation iTermController
 
