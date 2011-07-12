@@ -1342,9 +1342,10 @@ NSString *sessionsKey = @"sessions";
 
 - (IBAction)toggleFullScreenMode:(id)sender
 {
-    if (windowType_ != WINDOW_TYPE_FULL_SCREEN &&
-        IsLionOrLater() &&
-        [[PreferencePanel sharedInstance] lionStyleFullscreen]) {
+    if ([self lionFullScreen] ||
+        (windowType_ != WINDOW_TYPE_FULL_SCREEN &&
+         IsLionOrLater() &&
+         [[PreferencePanel sharedInstance] lionStyleFullscreen])) {
         // Is 10.7 Lion or later.
         [[self ptyWindow] performSelector:@selector(toggleFullScreen:) withObject:self];
         if ([[self ptyWindow] isFullScreen]) {

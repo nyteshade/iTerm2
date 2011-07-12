@@ -1244,7 +1244,9 @@ static float versionNumber;
 
 - (IBAction)settingChanged:(id)sender
 {
-    if (sender == windowStyle ||
+    if (sender == lionStyleFullscreen) {
+        defaultLionStyleFullscreen = ([lionStyleFullscreen state] == NSOnState);
+    } else if (sender == windowStyle ||
         sender == tabPosition ||
         sender == hideTab ||
         sender == useCompactLabel ||
