@@ -40,7 +40,7 @@
     }
 
     isFullScreen = [aTerm fullScreen];
-    isLionFullScreen = [[aTerm window] isFullScreen];
+    isLionFullScreen = [[aTerm ptyWindow] isFullScreen];
     isMiniaturized = [[aTerm window] isMiniaturized];
     frame = [[aTerm window] frame];
     screen = [[aTerm window] screen];

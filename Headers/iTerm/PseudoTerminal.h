@@ -201,6 +201,9 @@
 // The window's original screen.
 - (NSScreen*)screen;
 
+// The PTYWindow for this controller.
+- (PTYWindow*)ptyWindow;
+
 // Called on object deallocation.
 - (void)dealloc;
 

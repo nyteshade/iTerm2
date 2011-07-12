@@ -422,6 +422,11 @@ static BOOL IsLionOrLater() {
     return number_;
 }
 
+- (PTYWindow*)ptyWindow
+{
+    return (PTYWindow*) [self window];
+}
+
 - (NSScreen*)screen
 {
     NSArray* screens = [NSScreen screens];
@@ -1187,12 +1192,12 @@ static BOOL IsLionOrLater() {
 
 - (BOOL)anyFullScreen
 {
-    return _fullScreen || [[self window] isFullScreen];
+    return _fullScreen || [[self ptyWindow] isFullScreen];
 }
 
 - (BOOL)lionFullScreen
 {
-    return [[self window] isFullScreen];
+    return [[self ptyWindow] isFullScreen];
 }
 
 - (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)proposedFrameSize
@@ -1343,11 +1348,10 @@ static BOOL IsLionOrLater() {
 
 - (IBAction)toggleFullScreenMode:(id)sender
 {
-    if (windowType_ != WINDOW_TYPE_FULL_SCREEN &&
-        [[self window] respondsToSelector:@selector(toggleFullScreen:)]) {
+    if (windowType_ != WINDOW_TYPE_FULL_SCREEN && IsLionOrLater()) {
         // Is 10.7 Lion or later.
-        [[self window] toggleFullScreen:self];
-        if ([[self window] isFullScreen]) {
+        [[self ptyWindow] performSelector:@selector(toggleFullScreen:) withObject:self];
+        if ([[self ptyWindow] isFullScreen]) {
             windowType_ = WINDOW_TYPE_LION_FULL_SCREEN;
         } else {
             windowType_ = WINDOW_TYPE_NORMAL;

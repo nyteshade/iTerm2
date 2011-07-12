@@ -128,7 +128,7 @@
 - (void)toggleFullScreen:(id)sender
 {
     isFullScreen_ = !isFullScreen_;
-    [super toggleFullScreen:sender];
+    [super performSelector:@selector(toggleFullScreen:) withObject:sender];
 }
 
 - (BOOL)isFullScreen

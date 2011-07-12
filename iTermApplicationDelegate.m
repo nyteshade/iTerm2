@@ -90,11 +90,28 @@ int gDebugLogFile = -1;
     [PreferencePanel sharedInstance];
 
     if ([NSApp respondsToSelector:@selector(presentationOptions)]) {
-        id NSAppObj = NSApp;
-        // TODO: Use NSInvocation to avoid warnings here.
-        NSUInteger presentationOptions = (NSUInteger)[NSAppObj presentationOptions];
-        presentationOptions |= NSApplicationPresentationFullScreen;
-        [NSAppObj setPresentationOptions:presentationOptions];
+        //id NSAppObj = NSApp;
+        NSMethodSignature *presentationOptionsSignature = [NSApp->isa
+                                           instanceMethodSignatureForSelector:@selector(presentationOptions)];
+        NSInvocation *presentationOptionsInvocation = [NSInvocation
+                                       invocationWithMethodSignature:presentationOptionsSignature];
+        [presentationOptionsInvocation setTarget:NSApp];
+        [presentationOptionsInvocation setSelector:@selector(presentationOptions)];
+        [presentationOptionsInvocation invoke];
+
+        NSUInteger presentationOptions;
+        [presentationOptionsInvocation getReturnValue:&presentationOptions];
+        presentationOptions|= NSApplicationPresentationFullScreen;
+        //(NSUInteger)[NSAppObj presentationOptions];
+        //presentationOptions |= NSApplicationPresentationFullScreen;
+
+        NSMethodSignature *setSig = [NSApp->isa instanceMethodSignatureForSelector:@selector(setPresentationOptions:)];
+        NSInvocation *setInv = [NSInvocation invocationWithMethodSignature:setSig];
+        [setInv setTarget:NSApp];
+        [setInv setSelector:@selector(setPresentationOptions:)];
+        [setInv setArgument:&presentationOptions atIndex:2];
+        [setInv invoke];
+        //[NSAppObj setPresentationOptions:presentationOptions];
     }
 }
 
